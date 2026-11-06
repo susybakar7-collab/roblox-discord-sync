@@ -4,7 +4,7 @@ const app = express();
 app.use(express.json());
 
 // Your pre-configured credentials and IDs
-const DISCORD_BOT_TOKEN = 'MTU2ODI5MDg1ODAyODEwOTkyNg.GuP8UZ.Bb_pJ5723q8GUtzxmv2mUn7Cgmuj4qof-GXrL0';
+const DISCORD_BOT_TOKEN = process.env.MTU2ODI5MDg1ODAyODEwOTkyNg.GXOv5d.WnyL7VwGGmo0srTjMd0T1gWRKeLdVRUXrVnXTY;
 const GUILD_ID = '1557730225616322631';
 const SOLDAT_ROLE_ID = '1557730375478812692';
 const BLOOXLINK_API_KEY = 'dfa194f6-2ac9-403a-b892-8365959db78c';
