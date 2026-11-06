@@ -11,13 +11,11 @@ const BLOOX_API_KEY = 'dfa194f6-2ac9-403a-b892-8365959db78c';
 
 /**
  * 🎯 CENTRAL TEAM CONFIGURATION MAP
- * To add a new team in the future, just add one line here:
- * "ExactRobloxTeamName": "DISCORD_ROLE_ID"
+ * Make sure team names match the exact Team name in Roblox Studio (game.Teams)
  */
 const TEAM_ROLES = {
-    "Armed Forces": "1557730375478812692"
-    // Future example:
-    // "Officer": "123456789012345678"
+    "Armed Forces": "1557730375478812692",
+    "Government": "1568310490114031696"
 };
 
 app.post('/check-roles', async (req, res) => {
