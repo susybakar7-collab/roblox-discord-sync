@@ -6,7 +6,7 @@ app.use(express.json());
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = '1557730225616322631';
-const BLOOX_API_KEY = 'dfa194f6-2ac9-403a-b892-8365959db78c';
+const BLOOX_API_KEY = process.env.BLOOX_API_KEY;
 
 // Cache for Discord roles to avoid rate limits (refreshes every 10 minutes)
 let roleCache = {};
