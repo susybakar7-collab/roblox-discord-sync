@@ -1,47 +1,69 @@
 const express = require('express');
 const axios = require('axios');
+
 const app = express();
 app.use(express.json());
 
-// Your pre-configured credentials and IDs
+// Credentials & Configurations
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = '1557730225616322631';
-const SOLDAT_ROLE_ID = '1557730375478812692';
-const BLOOXLINK_API_KEY = 'dfa194f6-2ac9-403a-b892-8365959db78c';
+const BLOOX_API_KEY = 'dfa194f6-2ac9-403a-b892-8365959db78c';
 
-app.post('/check-role', async (req, res) => {
+/**
+ * 🎯 CENTRAL TEAM CONFIGURATION MAP
+ * To add a new team in the future, just add one line here:
+ * "ExactRobloxTeamName": "DISCORD_ROLE_ID"
+ */
+const TEAM_ROLES = {
+    "Armed Forces": "1557730375478812692"
+    // Future example:
+    // "Officer": "123456789012345678"
+};
+
+app.post('/check-roles', async (req, res) => {
     const { robloxId } = req.body;
-    if (!robloxId) return res.status(400).json({ success: false, error: "Missing robloxId" });
+
+    if (!robloxId) {
+        return res.status(400).json({ error: 'Missing robloxId' });
+    }
 
     try {
-        // 1. Get Discord ID from Bloxlink using your server ID and API key
-        const bloxlinkRes = await axios.get(
-            `https://api.blox.link/v4/public/guilds/${GUILD_ID}/roblox-to-discord/${robloxId}`,
-            { headers: { 'Authorization': BLOOXLINK_API_KEY } }
-        );
+        // 1. Get Discord ID from Bloxlink v4 Guild API
+        const bloxlinkRes = await axios.get(`https://api.blox.link/v4/public/guilds/${GUILD_ID}/roblox-to-discord/${robloxId}`, {
+            headers: { 'Authorization': BLOOX_API_KEY }
+        });
 
-        const discordIds = bloxlinkRes.data.discordIDs;
-        if (!discordIds || discordIds.length === 0) {
-            return res.json({ success: true, hasRole: false });
+        const discordIds = bloxlinkRes.data.discordIDs || [];
+        const discordId = discordIds.length > 0 ? discordIds[0] : null;
+
+        if (!discordId) {
+            return res.json({ authorizedTeams: [], message: 'User not linked via Bloxlink' });
         }
-        const discordId = discordIds[0];
 
-        // 2. Check Discord Member Roles using your bot token and server ID
-        const memberRes = await axios.get(
-            `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`,
-            { headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` } }
-        );
+        // 2. Fetch Guild Member from Discord API v10
+        const discordRes = await axios.get(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`, {
+            headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` }
+        });
 
-        const roles = memberRes.data.roles;
-        const hasRole = roles.includes(SOLDAT_ROLE_ID);
+        const userRoles = discordRes.data.roles || [];
 
-        return res.json({ success: true, hasRole: hasRole });
+        // 3. Dynamically evaluate which teams the user is authorized for
+        const authorizedTeams = [];
+        for (const [teamName, roleId] of Object.entries(TEAM_ROLES)) {
+            if (userRoles.includes(roleId)) {
+                authorizedTeams.push(teamName);
+            }
+        }
+
+        return res.json({ authorizedTeams });
 
     } catch (error) {
-        console.error(error.response?.data || error.message);
-        return res.status(500).json({ success: false, error: error.message });
+        console.error('Error verifying role:', error.response ? error.response.data : error.message);
+        return res.status(500).json({ error: 'Failed to verify roles' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
