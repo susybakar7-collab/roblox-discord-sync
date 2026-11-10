@@ -45,33 +45,46 @@ app.post('/check-roles', async (req, res) => {
     }
 
     try {
-        const bloxlinkRes = await axios.get(`https://api.blox.link/v4/public/guilds/${GUILD_ID}/roblox-to-discord/${robloxId}`, {
-            headers: { 'Authorization': BLOOX_API_KEY }
-        });
+        // 1. Resolve Roblox ID to Discord ID via Bloxlink v4
+        const bloxlinkRes = await axios.get(
+            `https://api.blox.link/v4/public/guilds/${GUILD_ID}/roblox-to-discord/${robloxId}`, 
+            {
+                headers: { 'Authorization': BLOOX_API_KEY }
+            }
+        );
 
         const discordIds = bloxlinkRes.data.discordIDs || [];
         const discordId = discordIds.length > 0 ? discordIds[0] : null;
 
         if (!discordId) {
-            return res.json({ authorizedTeams: [], message: 'User not linked via Bloxlink' });
+            return res.json({ authorizedTeams: [], authorizedRoles: [], message: 'User not linked via Bloxlink' });
         }
 
-        const discordRes = await axios.get(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`, {
-            headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` }
-        });
+        // 2. Guild Member roles from Discord API
+        const discordRes = await axios.get(
+            `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`, 
+            {
+                headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` }
+            }
+        );
 
         const userRoleIds = discordRes.data.roles || [];
         const guildRolesMap = await getGuildRolesMap();
 
-        const authorizedTeams = [];
+        // 3. Dynamically map role names for teams and medals
+        const authorizedRoles = [];
         for (const roleId of userRoleIds) {
             const roleName = guildRolesMap[roleId];
             if (roleName) {
-                authorizedTeams.push(roleName);
+                authorizedRoles.push(roleName);
             }
         }
 
-        return res.json({ authorizedTeams });
+        // Return both keys for compatibility with teams and the wardrobe medal system
+        return res.json({ 
+            authorizedTeams: authorizedRoles, 
+            authorizedRoles: authorizedRoles 
+        });
 
     } catch (error) {
         console.error('Error verifying role:', error.response ? error.response.data : error.message);
